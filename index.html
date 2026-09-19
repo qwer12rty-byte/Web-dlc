@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB DLC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="titlebar">
+        <div class="titlebar-drag">
+            <span class="title">WEB DLC</span>
+        </div>
+        <div class="titlebar-right">
+            <div class="lang-selector" id="langSelector">
+                <span class="flag" id="langFlag">&#127479;&#127482;</span>
+                <span class="lang-text" id="langText">Русский</span>
+                <span class="arrow">&#9662;</span>
+                <div class="lang-dropdown" id="langDropdown">
+                    <div class="lang-option" data-lang="ru">
+                        <span>&#127479;&#127482;</span> Русский
+                    </div>
+                    <div class="lang-option" data-lang="en">
+                        <span>&#127468;&#127463;</span> English
+                    </div>
+                </div>
+            </div>
+            <div class="window-controls">
+                <button class="btn-minimize" onclick="window.electronAPI.minimize()">&#8211;</button>
+                <button class="btn-close" onclick="window.electronAPI.close()">&#10005;</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="top-nav">
+        <button class="nav-btn active" data-page="home">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span data-i18n="nav_home">Главная</span>
+        </button>
+        <button class="nav-btn" data-page="accounts">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <span data-i18n="nav_accounts">Аккаунты</span>
+        </button>
+        <button class="nav-btn" data-page="settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span data-i18n="nav_settings">Настройки</span>
+        </button>
+        <div class="nav-spacer"></div>
+        <button class="nav-btn nav-btn-exit" data-page="exit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            <span data-i18n="nav_exit">Выход</span>
+        </button>
+    </div>
+
+    <div class="content">
+        <div class="page active" id="page-home">
+            <div class="client-card" id="clientCard">
+                <div class="card-image"></div>
+                <div class="card-overlay">
+                    <span class="card-tag" data-i18n="card_client">Клиент</span>
+                    <div class="card-bottom">
+                        <span class="card-version">WEB DLC (BETA)</span>
+                        <span class="card-arrow">&#10132;</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-client-detail">
+            <div class="detail-container">
+                <div class="detail-left">
+                    <div class="detail-image"></div>
+                </div>
+                <div class="detail-right">
+                    <div class="detail-header">
+                        <div>
+                            <h2 class="detail-title">WEB DLC (BETA)</h2>
+                            <span class="detail-subtitle" data-i18n="card_client">Клиент</span>
+                        </div>
+                        <button class="detail-back" id="detailBack" data-i18n="detail_back">НАЗАД &#10132;</button>
+                    </div>
+                    <p class="detail-desc" data-i18n="detail_desc">Мы создали для вас лучший клиент, который даст вам огромное преимущество в игре. В этом клиенте огромный функционал, который подойдет под все популярные сервера майнкрафт. В данный момент этот клиент находится в активном бета-тестировании, и это значит, что он может часто обновляться, чтобы ваш игровой опыт стал еще лучше.</p>
+                    <button class="detail-launch" id="detailLaunch">
+                        <span>&#9654;</span>
+                        <span data-i18n="detail_launch">ЗАПУСТИТЬ</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-accounts">
+            <div class="accounts-grid">
+                <div class="profile-card">
+                    <h3 data-i18n="profile_title">Профиль</h3>
+                    <div class="profile-row"><span class="label">UID</span><span class="sep">:</span><span class="value" id="p-uid">...</span></div>
+                    <div class="profile-row"><span class="label" data-i18n="profile_login">Логин</span><span class="sep">:</span><input class="value login-input" id="p-login" value="WEB DLC" spellcheck="false"></div>
+                    <div class="profile-row"><span class="label" data-i18n="profile_group">Группа</span><span class="sep">:</span><span class="value" id="p-group" data-i18n-value="group_user">Пользователь</span></div>
+                    <div class="profile-row"><span class="label">HWID</span><span class="sep">:</span><span class="value hwid" id="p-hwid">...</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page" id="page-settings">
+            <div class="settings-section">
+                <h3 data-i18n="settings_title">Настройки</h3>
+                <div class="settings-row">
+                    <span class="settings-label" data-i18n="settings_version">Версия</span>
+                    <span class="settings-value" id="settings-version">...</span>
+                </div>
+                <div class="settings-row">
+                    <span class="settings-label" data-i18n="settings_update">Обновления</span>
+                    <button class="action-btn small" id="checkUpdateBtn" data-i18n="settings_check_update">Проверить</button>
+                </div>
+                <div class="update-status" id="updateStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>
