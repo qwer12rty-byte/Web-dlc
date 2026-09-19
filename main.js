@@ -7,8 +7,8 @@ const https = require('https');
 
 let mainWindow;
 
-const CURRENT_VERSION = '1.0.0';
-const UPDATE_URL = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/version.json';
+const CURRENT_VERSION = '1.2';
+const UPDATE_URL = 'https://raw.githubusercontent.com/qwer12rty-byte/Web-dlc/main/version.json';
 
 function getDataPath() {
     return path.join(app.getPath('userData'), 'user.json');
