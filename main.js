@@ -36,7 +36,7 @@ function loadUserData() {
     }
     const hwid = generateHwid();
     const uid = Math.floor(100000 + Math.random() * 900000);
-    const data = { login: 'WEB DLC', group: 'Пользователь', hwid, uid: String(uid) };
+    const data = { login: 'WEB_DLC', group: 'Пользователь', hwid, uid: String(uid) };
     fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf8');
     return data;
 }
@@ -335,7 +335,7 @@ ipcMain.handle('launch-mc', async () => {
         classpath.push(jarPath);
 
         const userData = loadUserData();
-        const username = userData.login || 'WEB DLC';
+        const username = (userData.login || 'WEB_DLC').replace(/[^a-zA-Z0-9_\-]/g, '_');
         const uuid = userData.uid || '00000000000000000000000000000000';
 
         const nativesDir = path.join(fabricDir, 'natives');
