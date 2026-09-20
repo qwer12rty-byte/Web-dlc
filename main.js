@@ -265,6 +265,7 @@ ipcMain.handle('get-hwid', () => {
 });
 
 const { spawn } = require('child_process');
+const { dialog } = require('electron');
 
 ipcMain.handle('launch-mc', async () => {
     try {
@@ -305,12 +306,24 @@ ipcMain.handle('launch-mc', async () => {
 
         const libsDir = path.join(tlBase, 'libraries');
         const classpath = [];
+        const seenArtifacts = {};
         for (const lib of json.libraries) {
             if (lib.name) {
                 const parts = lib.name.split(':');
+                const key = parts[0] + ':' + parts[1];
+                const ver = parts[2];
+                if (seenArtifacts[key]) {
+                    const oldVer = seenArtifacts[key].ver;
+                    if (ver < oldVer) continue;
+                    const idx = classpath.indexOf(seenArtifacts[key].path);
+                    if (idx !== -1) classpath.splice(idx, 1);
+                }
                 const filePath = parts[0].replace(/\./g, '/') + '/' + parts[1] + '/' + parts[2] + '/' + parts[1] + '-' + parts[2] + '.jar';
                 const localPath = path.join(libsDir, filePath);
-                if (fs.existsSync(localPath)) classpath.push(localPath);
+                if (fs.existsSync(localPath)) {
+                    classpath.push(localPath);
+                    seenArtifacts[key] = { ver, path: localPath };
+                }
             }
         }
         classpath.push(jarPath);
@@ -321,6 +334,7 @@ ipcMain.handle('launch-mc', async () => {
 
         const nativesDir = path.join(fabricDir, 'natives');
         fs.mkdirSync(nativesDir, { recursive: true });
+        fs.mkdirSync(runDir, { recursive: true });
 
         const args = [
             '-Xmx2G', '-Xms512M',
@@ -362,10 +376,28 @@ ipcMain.handle('launch-mc', async () => {
             '--height', '480'
         ];
 
+        fs.writeFileSync(path.join(runDir, 'launch_log.txt'),
+            'java: ' + javaPath + '\nclasspath entries: ' + classpath.length + '\nmainClass: ' + json.mainClass + '\nverName: ' + verName + '\n',
+            'utf8'
+        );
+
         const child = spawn(javaPath, args, {
             cwd: runDir,
             detached: true,
-            stdio: 'ignore'
+            stdio: ['ignore', 'pipe', 'pipe']
+        });
+
+        let stderr = '';
+        child.stderr.on('data', d => { stderr += d; });
+        child.stdout.on('data', () => {});
+        child.on('error', (err) => {
+            dialog.showErrorBox('Launch Error', 'Failed to start: ' + err.message);
+        });
+        child.on('exit', (code) => {
+            if (code !== 0 && stderr) {
+                fs.writeFileSync(path.join(runDir, 'launch_error.txt'), stderr, 'utf8');
+                dialog.showErrorBox('MC Error (exit ' + code + ')\n\n' + stderr.substring(0, 2000));
+            }
         });
         child.unref();
 
