@@ -311,6 +311,22 @@ ipcMain.handle('launch-mc', async () => {
 
         const args = [
             '-Xmx2G', '-Xms512M',
+            '-Dfile.encoding=UTF8',
+            '-Djava.net.preferIPv4Stack=true',
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/java.time=ALL-UNNAMED',
+            '--add-opens=java.base/java.io=ALL-UNNAMED',
+            '--add-opens=java.base/java.nio=ALL-UNNAMED',
+            '--add-opens=java.base/java.nio.file=ALL-UNNAMED',
+            '--add-opens=java.base/java.util=ALL-UNNAMED',
+            '--add-opens=java.base/java.util.regex=ALL-UNNAMED',
+            '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+            '--add-opens=java.base/sun.nio.fs=ALL-UNNAMED',
+            '--add-opens=java.base/sun.security.ssl=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
+            '--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED',
+            '--add-opens=java.desktop/sun.java2d=ALL-UNNAMED',
+            '--add-opens=java.desktop/javax.swing=ALL-UNNAMED',
             '-Djava.library.path=' + nativesDir,
             '-Djna.tmpdir=' + nativesDir,
             '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + nativesDir,
@@ -322,8 +338,8 @@ ipcMain.handle('launch-mc', async () => {
             '--username', username,
             '--version', verName,
             '--gameDir', runDir,
-            '--assetsDir', path.join(mcDir, 'assets'),
-            '--assetIndex', json.id || 'fabric-loader-' + verName,
+            '--assetsDir', path.join(tlBase, 'game', 'assets'),
+            '--assetIndex', '1.21',
             '--uuid', uuid,
             '--accessToken', '0',
             '--userType', 'mojang',
@@ -331,15 +347,6 @@ ipcMain.handle('launch-mc', async () => {
             '--width', '854',
             '--height', '480'
         ];
-
-        const assetsIndexPath = path.join(mcDir, 'assets', 'indexes');
-        if (fs.existsSync(assetsIndexPath)) {
-            const indexFiles = fs.readdirSync(assetsIndexPath).filter(f => f.endsWith('.json'));
-            if (indexFiles.length > 0) {
-                const idx = indexFiles.find(f => f.includes('1.21')) || indexFiles[0];
-                args[args.indexOf('--assetIndex') + 1] = idx.replace('.json', '');
-            }
-        }
 
         const child = spawn(javaPath, args, {
             cwd: runDir,
