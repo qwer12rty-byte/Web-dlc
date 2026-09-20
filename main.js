@@ -231,9 +231,10 @@ ipcMain.handle('install-update', async (event, url) => {
 function getModsFolder() {
     const home = os.homedir();
     const candidates = [
+        path.join(home, 'AppData', 'Roaming', '.minecraft', 'run', 'mods'),
         path.join(home, 'AppData', 'Roaming', '.minecraft', 'mods'),
-        path.join(home, 'AppData', 'Roaming', '.fabric', 'mods'),
-        path.join(home, 'AppData', 'Roaming', '.minecraft', 'versions', '1.21.4', 'mods')
+        path.join(home, 'AppData', 'Roaming', '.tlauncher', 'legacy', 'Minecraft', 'game', 'mods'),
+        path.join(home, 'AppData', 'Roaming', '.fabric', 'mods')
     ];
     for (const dir of candidates) {
         if (fs.existsSync(dir)) return dir;
@@ -272,17 +273,54 @@ ipcMain.handle('check-dlc-update', async () => {
     }
 });
 
+function cleanOldMods(modsDir) {
+    const stalePatterns = ['wyvernpepe', 'web-1.0-SNAPSHOT', 'webdlcpepe', 'wyvern', 'webdlc'];
+    for (const f of fs.readdirSync(modsDir)) {
+        if (!f.endsWith('.jar')) continue;
+        const lower = f.toLowerCase();
+        if (stalePatterns.some(p => lower.includes(p.toLowerCase()))) {
+            try { fs.unlinkSync(path.join(modsDir, f)); } catch (e) {}
+        }
+    }
+}
+
+function ensureFabricApi(modsDir) {
+    const home = os.homedir();
+    const sources = [
+        path.join(home, 'AppData', 'Roaming', '.minecraft', 'mods'),
+        path.join(home, 'AppData', 'Roaming', '.tlauncher', 'legacy', 'Minecraft', 'game', 'mods')
+    ];
+    const fabricApiRe = /^fabric-api.*\.jar$/i;
+    const existing = fs.existsSync(modsDir) ? fs.readdirSync(modsDir) : [];
+    if (existing.some(f => fabricApiRe.test(f.toLowerCase()))) return;
+
+    for (const src of sources) {
+        if (!fs.existsSync(src)) continue;
+        const found = fs.readdirSync(src).find(f => fabricApiRe.test(f.toLowerCase()));
+        if (found) {
+            try {
+                fs.copyFileSync(path.join(src, found), path.join(modsDir, found));
+                return;
+            } catch (e) {}
+        }
+    }
+}
+
 ipcMain.handle('install-dlc', async () => {
     try {
         const remote = await fetchJson(DLC_VERSION_URL);
         if (!remote.url) return { success: false, error: 'No download URL' };
 
         const modsDir = getModsFolder();
-        const dest = path.join(modsDir, remote.filename || 'wyvernpepe.jar');
+        fs.mkdirSync(modsDir, { recursive: true });
 
+        cleanOldMods(modsDir);
+        ensureFabricApi(modsDir);
+
+        const dest = path.join(modsDir, remote.filename || 'webdlc.jar');
         await downloadFile(remote.url, dest);
         setLocalDlcVersion(remote.version);
-        return { success: true, version: remote.version, path: dest };
+        return { success: true, version: remote.version, path: dest, modsFolder: modsDir };
     } catch (e) {
         return { success: false, error: e.message };
     }
