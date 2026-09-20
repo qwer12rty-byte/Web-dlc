@@ -307,14 +307,20 @@ ipcMain.handle('launch-mc', async () => {
         const libsDir = path.join(tlBase, 'libraries');
         const classpath = [];
         const seenArtifacts = {};
+
+        function parseVer(v) {
+            const num = v.split(/[+]/)[0];
+            const parts = num.split('.').map(s => parseInt(s, 10) || 0);
+            return (parts[0] || 0) * 10000 + (parts[1] || 0) * 100 + (parts[2] || 0);
+        }
+
         for (const lib of json.libraries) {
             if (lib.name) {
                 const parts = lib.name.split(':');
                 const key = parts[0] + ':' + parts[1];
                 const ver = parts[2];
                 if (seenArtifacts[key]) {
-                    const oldVer = seenArtifacts[key].ver;
-                    if (ver < oldVer) continue;
+                    if (parseVer(ver) <= parseVer(seenArtifacts[key].ver)) continue;
                     const idx = classpath.indexOf(seenArtifacts[key].path);
                     if (idx !== -1) classpath.splice(idx, 1);
                 }
