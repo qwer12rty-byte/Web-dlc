@@ -327,6 +327,7 @@ ipcMain.handle('launch-mc', async () => {
             '--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED',
             '--add-opens=java.desktop/sun.java2d=ALL-UNNAMED',
             '--add-opens=java.desktop/javax.swing=ALL-UNNAMED',
+            '--add-modules', 'jdk.zipfs',
             '-Djava.library.path=' + nativesDir,
             '-Djna.tmpdir=' + nativesDir,
             '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + nativesDir,
