@@ -263,3 +263,93 @@ ipcMain.handle('get-hwid', () => {
     const data = loadUserData();
     return data.hwid;
 });
+
+const { spawn } = require('child_process');
+
+ipcMain.handle('launch-mc', async () => {
+    try {
+        const home = os.homedir();
+        const mcDir = path.join(home, 'AppData', 'Roaming', '.minecraft');
+        const runDir = path.join(mcDir, 'run');
+        const tlBase = path.join(home, 'AppData', 'Roaming', '.tlauncher', 'legacy', 'Minecraft');
+        const versionsDir = path.join(tlBase, 'game', 'versions');
+
+        const javaPath = path.join(home, 'AppData', 'Roaming', '.tlauncher', 'starter', 'jre_default', 'jre-21.0.11-windows-x64', 'bin', 'java.exe');
+        if (!fs.existsSync(javaPath)) return { success: false, error: 'Java 21 not found' };
+
+        let fabricDir = null;
+        const candidates = ['Fabric 1.21.4', 'Fabric 1.21.11'];
+        for (const c of candidates) {
+            const p = path.join(versionsDir, c);
+            if (fs.existsSync(path.join(p, c + '.json'))) { fabricDir = p; break; }
+        }
+        if (!fabricDir) return { success: false, error: 'Fabric version not found' };
+
+        const verName = path.basename(fabricDir);
+        const jsonPath = path.join(fabricDir, verName + '.json');
+        const jarPath = path.join(fabricDir, verName + '.jar');
+        const json = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+
+        const libsDir = path.join(tlBase, 'game', 'libraries');
+        const classpath = [];
+        for (const lib of json.libraries) {
+            if (lib.url && lib.name) {
+                const parts = lib.name.split(':');
+                const filePath = parts[0].replace(/\./g, '/') + '/' + parts[1] + '/' + parts[2] + '/' + parts[1] + '-' + parts[2] + '.jar';
+                const localPath = path.join(libsDir, filePath);
+                if (fs.existsSync(localPath)) classpath.push(localPath);
+            }
+        }
+        classpath.push(jarPath);
+
+        const userData = loadUserData();
+        const username = userData.login || 'WEB DLC';
+        const uuid = userData.uid || '00000000000000000000000000000000';
+
+        const nativesDir = path.join(fabricDir, 'natives');
+        fs.mkdirSync(nativesDir, { recursive: true });
+
+        const args = [
+            '-Xmx2G', '-Xms512M',
+            '-Djava.library.path=' + nativesDir,
+            '-Djna.tmpdir=' + nativesDir,
+            '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + nativesDir,
+            '-Dio.netty.native.workdir=' + nativesDir,
+            '-Dminecraft.launcher.brand=WEB-DLC',
+            '-Dminecraft.launcher.version=' + CURRENT_VERSION,
+            '-cp', classpath.join(';'),
+            json.mainClass,
+            '--username', username,
+            '--version', verName,
+            '--gameDir', runDir,
+            '--assetsDir', path.join(mcDir, 'assets'),
+            '--assetIndex', json.id || 'fabric-loader-' + verName,
+            '--uuid', uuid,
+            '--accessToken', '0',
+            '--userType', 'mojang',
+            '--versionType', 'release',
+            '--width', '854',
+            '--height', '480'
+        ];
+
+        const assetsIndexPath = path.join(mcDir, 'assets', 'indexes');
+        if (fs.existsSync(assetsIndexPath)) {
+            const indexFiles = fs.readdirSync(assetsIndexPath).filter(f => f.endsWith('.json'));
+            if (indexFiles.length > 0) {
+                const idx = indexFiles.find(f => f.includes('1.21')) || indexFiles[0];
+                args[args.indexOf('--assetIndex') + 1] = idx.replace('.json', '');
+            }
+        }
+
+        const child = spawn(javaPath, args, {
+            cwd: runDir,
+            detached: true,
+            stdio: 'ignore'
+        });
+        child.unref();
+
+        return { success: true, pid: child.pid };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});

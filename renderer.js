@@ -162,6 +162,22 @@ document.getElementById('detailBack').addEventListener('click', () => {
     document.getElementById('page-home').classList.add('active');
 });
 
+document.getElementById('detailLaunch').addEventListener('click', async () => {
+    const btn = document.getElementById('detailLaunch');
+    btn.disabled = true;
+    btn.querySelector('span:last-child').textContent = translations[currentLang].dlc_installing || 'Запуск...';
+
+    const result = await window.electronAPI.launchMc();
+    btn.disabled = false;
+    btn.querySelector('span:last-child').textContent = translations[currentLang].detail_launch;
+
+    if (result.success) {
+        window.electronAPI.close();
+    } else {
+        alert('Ошибка запуска: ' + result.error);
+    }
+});
+
 async function initVersion() {
     const ver = await window.electronAPI.getCurrentVersion();
     document.getElementById('settings-version').textContent = ver;

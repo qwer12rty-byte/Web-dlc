@@ -11,5 +11,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
     installDlc: () => ipcRenderer.invoke('install-dlc'),
     getDlcStatus: () => ipcRenderer.invoke('get-dlc-status'),
     getHwid: () => ipcRenderer.invoke('get-hwid'),
-    recheckAccess: () => ipcRenderer.invoke('recheck-access')
+    launchMc: () => ipcRenderer.invoke('launch-mc')
 });
