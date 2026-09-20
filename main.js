@@ -192,6 +192,42 @@ ipcMain.handle('check-update', async () => {
     }
 });
 
+ipcMain.handle('install-update', async (event, url) => {
+    try {
+        const exePath = app.getPath('exe');
+        const exeDir = path.dirname(exePath);
+        const tempDir = app.getPath('temp');
+        const newExe = path.join(tempDir, 'WEB_DLC_new.exe');
+        const batFile = path.join(tempDir, 'WEB_DLC_update.bat');
+
+        await downloadFile(url, newExe);
+
+        const bat = [
+            '@echo off',
+            'timeout /t 2 /nobreak >nul',
+            'taskkill /f /im "WEB DLC.exe" >nul 2>&1',
+            'timeout /t 1 /nobreak >nul',
+            'copy /y "' + newExe + '" "' + exePath + '"',
+            'del "' + newExe + '"',
+            'start "" "' + exePath + '"',
+            'del "%~f0"'
+        ].join('\r\n');
+
+        fs.writeFileSync(batFile, bat, 'utf8');
+
+        const child = spawn('cmd.exe', ['/c', batFile], {
+            detached: true,
+            stdio: 'ignore'
+        });
+        child.unref();
+
+        app.quit();
+        return { success: true };
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+});
+
 function getModsFolder() {
     const home = os.homedir();
     const candidates = [

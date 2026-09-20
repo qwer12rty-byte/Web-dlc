@@ -152,6 +152,21 @@ document.getElementById('p-login').addEventListener('change', async function () 
 
 loadProfile();
 
+async function autoCheckDlc() {
+    try {
+        const result = await window.electronAPI.checkDlcUpdate();
+        if (result.hasUpdate) {
+            const status = document.getElementById('dlcStatus');
+            const installRow = document.getElementById('dlcInstallRow');
+            document.getElementById('dlc-version').textContent = result.remoteVersion;
+            status.textContent = translations[currentLang].dlc_update_available + ': v' + result.remoteVersion;
+            status.className = 'update-status';
+            installRow.style.display = 'flex';
+        }
+    } catch (e) {}
+}
+autoCheckDlc();
+
 document.getElementById('clientCard').addEventListener('click', () => {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-client-detail').classList.add('active');
@@ -186,10 +201,12 @@ async function initVersion() {
 document.getElementById('checkUpdateBtn').addEventListener('click', async () => {
     const status = document.getElementById('updateStatus');
     const btn = document.getElementById('checkUpdateBtn');
+    const installRow = document.getElementById('launcherInstallRow');
     btn.disabled = true;
     btn.textContent = '...';
     status.textContent = '';
     status.className = 'update-status';
+    if (installRow) installRow.style.display = 'none';
 
     const result = await window.electronAPI.checkUpdate();
     btn.disabled = false;
@@ -202,12 +219,26 @@ document.getElementById('checkUpdateBtn').addEventListener('click', async () => 
         status.textContent = (translations[currentLang].update_available || 'Доступно обновление') + ': v' + result.version;
         status.className = 'update-status';
         btn.textContent = translations[currentLang].settings_check_update || 'Проверить';
+        if (installRow && result.url) {
+            installRow.style.display = 'flex';
+            window._pendingUpdateUrl = result.url;
+        }
     } else {
         status.textContent = translations[currentLang].update_latest || 'Уже последняя версия';
         status.className = 'update-status success';
         btn.textContent = translations[currentLang].settings_check_update || 'Проверить';
     }
 });
+
+const launcherInstallBtn = document.getElementById('launcherInstallBtn');
+if (launcherInstallBtn) {
+    launcherInstallBtn.addEventListener('click', async () => {
+        if (!window._pendingUpdateUrl) return;
+        launcherInstallBtn.disabled = true;
+        launcherInstallBtn.textContent = '...';
+        await window.electronAPI.installUpdate(window._pendingUpdateUrl);
+    });
+}
 
 initVersion();
 

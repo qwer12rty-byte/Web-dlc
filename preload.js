@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     saveUserData: (data) => ipcRenderer.invoke('save-user-data', data),
     getCurrentVersion: () => ipcRenderer.invoke('get-current-version'),
     checkUpdate: () => ipcRenderer.invoke('check-update'),
+    installUpdate: (url) => ipcRenderer.invoke('install-update', url),
     checkDlcUpdate: () => ipcRenderer.invoke('check-dlc-update'),
     installDlc: () => ipcRenderer.invoke('install-dlc'),
     getDlcStatus: () => ipcRenderer.invoke('get-dlc-status'),
