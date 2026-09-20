@@ -264,29 +264,106 @@ ipcMain.handle('get-hwid', () => {
     return data.hwid;
 });
 
+const { spawn } = require('child_process');
+
 ipcMain.handle('launch-mc', async () => {
     try {
         const home = os.homedir();
-        const tlDir = path.join(home, 'AppData', 'Roaming', '.tlauncher');
-        const tlExe = path.join(tlDir, 'legacy', 'Minecraft', 'TLauncher.exe');
+        const tlBase = path.join(home, 'AppData', 'Roaming', '.tlauncher', 'legacy', 'Minecraft', 'game');
+        const versionsDir = path.join(tlBase, 'versions');
+        const runDir = path.join(home, 'AppData', 'Roaming', '.minecraft', 'run');
 
-        let launcherPath = null;
-        if (fs.existsSync(tlExe)) {
-            launcherPath = tlExe;
-        } else {
-            const candidates = [
-                path.join(tlDir, 'TLauncher.exe'),
-                path.join(home, 'AppData', 'Roaming', '.minecraft', 'TLauncher.exe')
-            ];
-            for (const c of candidates) {
-                if (fs.existsSync(c)) { launcherPath = c; break; }
+        const exeDir = path.dirname(app.getPath('exe'));
+        const parentDir = path.dirname(exeDir);
+        let javaPath = null;
+        const jreCandidates = [
+            path.join(parentDir, 'wyvern-jre'),
+            path.join(exeDir, 'jre'),
+            path.join(parentDir, 'jre')
+        ];
+        for (const jc of jreCandidates) {
+            if (fs.existsSync(jc)) {
+                const entries = fs.readdirSync(jc).filter(e => fs.statSync(path.join(jc, e)).isDirectory());
+                if (entries.length > 0) {
+                    const p = path.join(jc, entries[0], 'bin', 'java.exe');
+                    if (fs.existsSync(p)) { javaPath = p; break; }
+                }
             }
         }
+        if (!javaPath) return { success: false, error: 'Java 21 not found' };
 
-        if (!launcherPath) return { success: false, error: 'TLauncher not found' };
+        let fabricDir = null;
+        for (const c of ['Fabric 1.21.4', 'Fabric 1.21.11']) {
+            const p = path.join(versionsDir, c);
+            if (fs.existsSync(path.join(p, c + '.json'))) { fabricDir = p; break; }
+        }
+        if (!fabricDir) return { success: false, error: 'Fabric version not found' };
 
-        const child = spawn(launcherPath, [], {
-            cwd: path.dirname(launcherPath),
+        const verName = path.basename(fabricDir);
+        const json = JSON.parse(fs.readFileSync(path.join(fabricDir, verName + '.json'), 'utf8'));
+        const jarPath = path.join(fabricDir, verName + '.jar');
+
+        const libsDir = path.join(tlBase, 'libraries');
+        const classpath = [];
+        for (const lib of json.libraries) {
+            if (lib.name) {
+                const parts = lib.name.split(':');
+                const filePath = parts[0].replace(/\./g, '/') + '/' + parts[1] + '/' + parts[2] + '/' + parts[1] + '-' + parts[2] + '.jar';
+                const localPath = path.join(libsDir, filePath);
+                if (fs.existsSync(localPath)) classpath.push(localPath);
+            }
+        }
+        classpath.push(jarPath);
+
+        const userData = loadUserData();
+        const username = userData.login || 'WEB DLC';
+        const uuid = userData.uid || '00000000000000000000000000000000';
+
+        const nativesDir = path.join(fabricDir, 'natives');
+        fs.mkdirSync(nativesDir, { recursive: true });
+
+        const args = [
+            '-Xmx2G', '-Xms512M',
+            '-Dfile.encoding=UTF8',
+            '-Djava.net.preferIPv4Stack=true',
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/java.time=ALL-UNNAMED',
+            '--add-opens=java.base/java.io=ALL-UNNAMED',
+            '--add-opens=java.base/java.nio=ALL-UNNAMED',
+            '--add-opens=java.base/java.nio.file=ALL-UNNAMED',
+            '--add-opens=java.base/java.util=ALL-UNNAMED',
+            '--add-opens=java.base/java.util.regex=ALL-UNNAMED',
+            '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+            '--add-opens=java.base/sun.nio.fs=ALL-UNNAMED',
+            '--add-opens=java.base/sun.security.ssl=ALL-UNNAMED',
+            '--add-opens=java.desktop/java.awt=ALL-UNNAMED',
+            '--add-opens=java.desktop/sun.awt.image=ALL-UNNAMED',
+            '--add-opens=java.desktop/sun.java2d=ALL-UNNAMED',
+            '--add-opens=java.desktop/javax.swing=ALL-UNNAMED',
+            '--add-modules', 'jdk.zipfs',
+            '-Djava.library.path=' + nativesDir,
+            '-Djna.tmpdir=' + nativesDir,
+            '-Dorg.lwjgl.system.SharedLibraryExtractPath=' + nativesDir,
+            '-Dio.netty.native.workdir=' + nativesDir,
+            '-Dminecraft.launcher.brand=WEB-DLC',
+            '-Dminecraft.launcher.version=' + CURRENT_VERSION,
+            '-cp', classpath.join(';'),
+            json.mainClass,
+            '--username', username,
+            '--version', verName,
+            '--gameDir', runDir,
+            '--assetsDir', path.join(tlBase, 'assets'),
+            '--assetIndex', '1.21',
+            '--uuid', uuid,
+            '--accessToken', '0',
+            '--userType', 'mojang',
+            '--versionType', 'release',
+            '--width', '854',
+            '--height', '480'
+        ];
+
+        const child = spawn(javaPath, args, {
+            cwd: runDir,
             detached: true,
             stdio: 'ignore'
         });
