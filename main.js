@@ -7,7 +7,7 @@ const https = require('https');
 
 let mainWindow;
 
-const CURRENT_VERSION = '1.4';
+const CURRENT_VERSION = '1.6';
 const UPDATE_URL = 'https://raw.githubusercontent.com/qwer12rty-byte/Web-dlc/main/version.json';
 const DLC_VERSION_URL = 'https://raw.githubusercontent.com/qwer12rty-byte/Web-dlc/main/dlc_version.json';
 const HWID_URL = 'https://raw.githubusercontent.com/qwer12rty-byte/Web-dlc/main/hwids.json';
